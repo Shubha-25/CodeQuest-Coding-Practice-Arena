@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeQuest | Java Quiz</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+        }
+
+        header {
+            background: #1e293b;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #38bdf8;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 25px;
+        }
+
+        .code {
+            background: #1e293b;
+            padding: 18px;
+            border-radius: 8px;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+
+        .answers {
+            display: grid;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .answer {
+            background: #334155;
+            color: white;
+        }
+
+        .answer:hover {
+            background: #475569;
+        }
+
+        .correct {
+            background: #15803d;
+        }
+
+        .wrong {
+            background: #b91c1c;
+        }
+
+        #next {
+            background: #38bdf8;
+            color: #0f172a;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        #feedback {
+            min-height: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>CodeQuest</h1>
+        <p>Your Coding Practice Arena</p>
+    </header>
+
+    <main class="container">
+        <p id="progress">Question 1</p>
+        <h2 id="question"></h2>
+        <pre class="code" id="code"></pre>
+
+        <div class="answers" id="answers"></div>
+
+        <p id="feedback"></p>
+        <p id="score">Score: 0</p>
+
+        <button id="next" onclick="nextQuestion()" hidden>
+            Next Question
+        </button>
+    </main>
+
+    <script>
+        const questions = [
+            {
+                question: "What is the output of this Java code?",
+                code: 'int x = 5;\nSystem.out.println(x + 2);',
+                options: ["5", "7", "52", "Error"],
+                answer: 1,
+                explanation: "5 + 2 equals 7."
+            },
+            {
+                question: "Which keyword creates an object in Java?",
+                code: "",
+                options: ["class", "static", "new", "void"],
+                answer: 2,
+                explanation: "The new keyword creates an object."
+            },
+            {
+                question: "Which type stores true or false?",
+                code: "",
+                options: ["int", "boolean", "String", "double"],
+                answer: 1,
+                explanation: "A boolean variable stores true or false."
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answered = false;
+
+        function showQuestion() {
+            answered = false;
+
+            const q = questions[currentQuestion];
+
+            document.getElementById("progress").textContent =
+                `Question ${currentQuestion + 1} of ${questions.length}`;
+
+            document.getElementById("question").textContent = q.question;
+            document.getElementById("code").textContent = q.code;
+            document.getElementById("feedback").textContent = "";
+            document.getElementById("score").textContent = `Score: ${score}`;
+            document.getElementById("next").hidden = true;
+
+            const answers = document.getElementById("answers");
+            answers.innerHTML = "";
+
+            q.options.forEach((option, index) => {
+                const button = document.createElement("button");
+                button.textContent = option;
+                button.className = "answer";
+                button.onclick = () => checkAnswer(index, button);
+                answers.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selected, button) {
+            if (answered) return;
+
+            answered = true;
+            const q = questions[currentQuestion];
+            const buttons = document.querySelectorAll(".answer");
+
+            buttons.forEach((b, index) => {
+                b.disabled = true;
+
+                if (index === q.answer) {
+                    b.classList.add("correct");
+                }
+            });
+
+            if (selected === q.answer) {
+                score++;
+                document.getElementById("feedback").textContent =
+                    "Correct! " + q.explanation;
+            } else {
+                button.classList.add("wrong");
+                document.getElementById("feedback").textContent =
+                    "Not quite. " + q.explanation;
+            }
+
+            document.getElementById("score").textContent = `Score: ${score}`;
+            document.getElementById("next").hidden = false;
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                document.querySelector("main").innerHTML = `
+                    <h2>Quest Complete!</h2>
+                    <p>You scored ${score} out of ${questions.length}.</p>
+                    <button id="next" onclick="restartQuiz()">
+                        Play Again
+                    </button>
+                `;
+            }
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+
+            document.querySelector("main").innerHTML = `
+                <p id="progress"></p>
+                <h2 id="question"></h2>
+                <pre class="code" id="code"></pre>
+                <div class="answers" id="answers"></div>
+                <p id="feedback"></p>
+                <p id="score"></p>
+                <button id="next" onclick="nextQuestion()" hidden>
+                    Next Question
+                </button>
+            `;
+
+            showQuestion();
+        }
+
+        showQuestion();
+    </script>
+</body>
+</html>
