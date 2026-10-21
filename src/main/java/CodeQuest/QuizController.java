@@ -3,6 +3,7 @@ package CodeQuest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -168,22 +169,42 @@ public class QuizController {
                 throw new IllegalStateException("Invalid options or answer index: " + line);
             }
 
-            questions.add(Map.of(
-                    "id", id++,
-                    "question", question,
-                    "options", options,
-                    "answer", answer,
-                    "explanation", explanation,
-                    "difficulty", difficulty,
-                    "code", code
-            ));
+            int questionId = id++;
+
+int level = questionId <= 11
+        ? 1
+        : ((questionId - 12) / 12) + 2;
+
+questions.add(Map.of(
+        "id", questionId,
+        "level", level,
+        "question", question,
+        "options", options,
+        "answer", answer,
+        "explanation", explanation,
+        "difficulty", difficulty,
+        "code", code
+));
         }
     }
 
-    @GetMapping("/questions")
-    public List<Map<String, Object>> getQuestions() {
-        List<Map<String, Object>> quiz = new ArrayList<>(questions);
-        Collections.shuffle(quiz);
-        return quiz;
+@GetMapping("/level/{level}")
+public List<Map<String, Object>> getQuestionsByLevel(
+        @PathVariable int level) {
+
+    if (level < 1 || level > 10) {
+        return List.of();
     }
+
+    List<Map<String, Object>> quiz = new ArrayList<>();
+
+    for (Map<String, Object> question : questions) {
+        if ((int) question.get("level") == level) {
+            quiz.add(question);
+        }
+    }
+
+    Collections.shuffle(quiz);
+    return quiz;
+}
 }
