@@ -24,8 +24,8 @@
 
         .container {
             max-width: 600px;
-            margin: 40px auto;
-            padding: 25px;
+            margin: 30px auto;
+            padding: 20px;
         }
 
         .code {
@@ -42,12 +42,23 @@
             margin-top: 20px;
         }
 
-        button {
-            padding: 14px;
+        button, select {
+            padding: 12px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            margin: 5px;
+        }
+
+        select {
+            background: white;
+            color: #0f172a;
+        }
+
+        button {
+            background: #38bdf8;
+            color: #0f172a;
         }
 
         .answer {
@@ -61,19 +72,16 @@
 
         button:disabled { cursor: default; }
 
-        .correct { background: #15803d; }
-        .wrong { background: #b91c1c; }
+        .correct { background: #15803d !important; }
+        .wrong { background: #b91c1c !important; }
 
-        #next {
-            background: #38bdf8;
-            color: #0f172a;
-            font-weight: bold;
-            margin-top: 20px;
+        #feedback {
+            min-height: 24px;
         }
 
-        #feedback { min-height: 24px; }
-
-        .error { color: #fca5a5; }
+        .error {
+            color: #fca5a5;
+        }
     </style>
 </head>
 
@@ -84,34 +92,51 @@
     </header>
 
     <main class="container" id="quiz">
-        <p id="progress">Loading questions...</p>
+        <div id="levelSelector">
+            <label for="level">Choose Level:</label>
+            <select id="level">
+                <option value="1">Level 1</option>
+                <option value="2">Level 2</option>
+                <option value="3">Level 3</option>
+                <option value="4">Level 4</option>
+                <option value="5">Level 5</option>
+                <option value="6">Level 6</option>
+                <option value="7">Level 7</option>
+                <option value="8">Level 8</option>
+                <option value="9">Level 9</option>
+                <option value="10">Level 10</option>
+            </select>
+            <button id="startLevel">Start Level</button>
+        </div>
+
+        <p id="progress">Choose a level to begin!</p>
         <h2 id="question"></h2>
         <pre class="code" id="code"></pre>
         <div class="answers" id="answers"></div>
         <p id="feedback"></p>
         <p id="score">Score: 0</p>
-
         <button id="next" hidden>Next Question</button>
     </main>
 
     <script>
-        // Questions now come from the Java Spring Boot API.
-        const API_URL = "/api/quiz/questions";
-
         let questions = [];
         let currentQuestion = 0;
         let score = 0;
         let answered = false;
 
         async function loadQuestions() {
-            const quiz = document.getElementById("quiz");
+            const level = document.getElementById("level").value;
+            const progress = document.getElementById("progress");
 
-            quiz.innerHTML = `
-                <p>Loading questions from the Java backend...</p>
-            `;
+            progress.textContent = "Loading questions...";
+            document.getElementById("question").textContent = "";
+            document.getElementById("code").textContent = "";
+            document.getElementById("answers").innerHTML = "";
+            document.getElementById("feedback").textContent = "";
+            document.getElementById("next").hidden = true;
 
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch("/api/quiz/level/" + level);
 
                 if (!response.ok) {
                     throw new Error("Server returned status " + response.status);
@@ -120,7 +145,10 @@
                 const data = await response.json();
 
                 if (!Array.isArray(data) || data.length === 0) {
-                    throw new Error("No quiz questions were returned.");
+                    progress.textContent =
+                        "No questions available for Level " + level + " yet.";
+                    document.getElementById("score").textContent = "Score: 0";
+                    return;
                 }
 
                 questions = data;
@@ -128,37 +156,12 @@
                 score = 0;
                 answered = false;
 
-                renderQuiz();
                 showQuestion();
-
             } catch (error) {
                 console.error("Could not load quiz:", error);
-
-                quiz.innerHTML = `
-                    <h2>Couldn't load the quiz</h2>
-                    <p class="error">
-                        Check that the Java backend is running, then try again.
-                    </p>
-                    <button id="retry">Try Again</button>
-                `;
-
-                document.getElementById("retry").onclick = loadQuestions;
+                progress.textContent =
+                    "Couldn't load the quiz. Make sure the Java backend is running.";
             }
-        }
-
-        function renderQuiz() {
-            document.getElementById("quiz").innerHTML = `
-                <p id="progress"></p>
-                <h2 id="question"></h2>
-                <pre class="code" id="code"></pre>
-                <div class="answers" id="answers"></div>
-                <p id="feedback"></p>
-                <p id="score"></p>
-                <button id="next">Next Question</button>
-            `;
-
-            document.getElementById("next").hidden = true;
-            document.getElementById("next").onclick = nextQuestion;
         }
 
         function showQuestion() {
@@ -198,19 +201,19 @@
             buttons.forEach((b, index) => {
                 b.disabled = true;
 
-                if (index === q.answer) {
+                if (index === Number(q.answer)) {
                     b.classList.add("correct");
                 }
             });
 
-            if (selected === q.answer) {
+            if (selected === Number(q.answer)) {
                 score++;
                 document.getElementById("feedback").textContent =
-                    "Correct! " + q.explanation;
+                    "Correct! " + (q.explanation || "");
             } else {
                 button.classList.add("wrong");
                 document.getElementById("feedback").textContent =
-                    "Not quite. " + q.explanation;
+                    "Not quite. " + (q.explanation || "");
             }
 
             document.getElementById("score").textContent = `Score: ${score}`;
@@ -223,17 +226,20 @@
             if (currentQuestion < questions.length) {
                 showQuestion();
             } else {
-                document.getElementById("quiz").innerHTML = `
-                    <h2>Quest Complete!</h2>
-                    <p>You scored ${score} out of ${questions.length}.</p>
-                    <button id="playAgain">Play Again</button>
-                `;
-
-                document.getElementById("playAgain").onclick = loadQuestions;
+                document.getElementById("progress").textContent = "Quest complete!";
+                document.getElementById("question").textContent =
+                    `You scored ${score} out of ${questions.length}!`;
+                document.getElementById("code").textContent = "";
+                document.getElementById("answers").innerHTML = "";
+                document.getElementById("feedback").textContent =
+                    "Great job! Choose a level above to play again.";
+                document.getElementById("next").hidden = true;
             }
         }
 
-        // Start by requesting questions from the backend.
+        document.getElementById("startLevel").onclick = loadQuestions;
+        document.getElementById("next").onclick = nextQuestion;
+
         loadQuestions();
     </script>
 </body>
