@@ -186,8 +186,6 @@ public class QuizController {
 
             int questionId = id++;
 
-            // Keep the existing progression model while ensuring the published
-            // ten-level UI can reach every seeded question.
             int level = questionId <= 11
                     ? 1
                     : Math.min(10, ((questionId - 12) / 12) + 2);
@@ -205,25 +203,27 @@ questions.add(Map.of(
         }
     }
 
-@GetMapping("/level/{level}")
-public List<Map<String, Object>> getQuestionsByLevel(
-        @PathVariable int level) {
+    @GetMapping("/level/{level}")
+   
+    @GetMapping("/level/{level}")
+    public List<Map<String, Object>> getQuestionsByLevel(
+            @PathVariable int level) {
 
-    if (level < 1 || level > 10) {
-        return List.of();
-    }
-
-    List<Map<String, Object>> quiz = new ArrayList<>();
-
-    for (Map<String, Object> question : questions) {
-        if ((int) question.get("level") == level) {
-            quiz.add(question);
+        if (level < 1 || level > 10) {
+            return List.of();
         }
-    }
 
-    Collections.shuffle(quiz);
-    return quiz;
-}
+        List<Map<String, Object>> quiz = new ArrayList<>();
+
+        for (Map<String, Object> question : questions) {
+            if ((int) question.get("level") == level) {
+                quiz.add(question);
+            }
+        }
+
+        Collections.shuffle(quiz);
+        return quiz;
+    }
 
     @PostMapping("/submit")
     public QuizResult submitQuiz(@RequestBody QuizSubmissionRequest submission) {
@@ -241,8 +241,10 @@ public List<Map<String, Object>> getQuestionsByLevel(
         int correctAnswers = 0;
 
         for (QuizAnswerRequest answer : submission.answers()) {
-            if (answer == null || answer.questionId() == null || answer.selectedAnswer() == null) {
-                throw badRequest("Each answer must include a questionId and selectedAnswer.");
+            if (answer == null || answer.questionId() == null
+                    || answer.selectedAnswer() == null) {
+                throw badRequest(
+                        "Each answer must include a questionId and selectedAnswer.");
             }
             if (answer.selectedAnswer() < 0 || answer.selectedAnswer() > 3) {
                 throw badRequest("selectedAnswer must be between 0 and 3.");
@@ -252,8 +254,10 @@ public List<Map<String, Object>> getQuestionsByLevel(
             }
 
             Map<String, Object> question = findQuestion(answer.questionId());
-            if (question == null || (int) question.get("level") != submission.level()) {
-                throw badRequest("Question " + answer.questionId() + " is not valid for this level.");
+            if (question == null
+                    || (int) question.get("level") != submission.level()) {
+                throw badRequest("Question " + answer.questionId()
+                        + " is not valid for this level.");
             }
             if (answer.selectedAnswer().equals(question.get("answer"))) {
                 correctAnswers++;
@@ -261,7 +265,9 @@ public List<Map<String, Object>> getQuestionsByLevel(
         }
 
         int totalQuestions = submission.answers().size();
-        double percentage = Math.round(correctAnswers * 10000.0 / totalQuestions) / 100.0;
+        double percentage =
+                Math.round(correctAnswers * 10000.0 / totalQuestions) / 100.0;
+
         return new QuizResult(
                 submission.level(),
                 totalQuestions,
@@ -286,9 +292,17 @@ public List<Map<String, Object>> getQuestionsByLevel(
     }
 
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<ApiError> handleBadRequest(ResponseStatusException exception) {
+    public ResponseEntity<ApiError> handleBadRequest(
+            ResponseStatusException exception) {
         return ResponseEntity.status(exception.getStatusCode())
                 .body(new ApiError(exception.getReason()));
+    }
+
+    @GetMapping("/questions")
+    public List<Map<String, Object>> getQuestions() {
+        List<Map<String, Object>> quiz = new ArrayList<>(questions);
+        Collections.shuffle(quiz);
+        return quiz;
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -297,3 +311,4 @@ public List<Map<String, Object>> getQuestionsByLevel(
                 .body(new ApiError("Request body is missing or invalid."));
     }
 }
+
