@@ -107,7 +107,7 @@ public class QuizController {
                 M|Which tool compiles Java source code?|java~javac~javadoc only~jar only|1|javac is the Java compiler.|javac Main.java
                 M|What is the purpose of the main method's String[] args?|Store command-line arguments~Store all class fields~Return an integer~Create the JVM|0|args contains command-line arguments.|public static void main(String[] args)
                 M|Which keyword starts a conditional multi-branch statement?|switch~loop~choose~caseonly|0|switch selects among matching cases.|switch (n) {}
-                M|What is the result of true || false?|true~false~Error~null|0|Logical OR is true when at least one operand is true.|true || false
+                M|What is the result of true OR false?|true~false~Error~null|0|Logical OR is true when at least one operand is true.|true || false
                 M|What is the result of !true?|true~false~1~Error|1|Logical NOT reverses a boolean value.|!true
                 M|Which operator increments a variable by one?|--~++~**~//|1|++ increments a numeric variable.|x++;
                 M|What is the result of 2 + 3 * 4?|20~14~24~Error|1|Multiplication takes precedence over addition.|2 + 3 * 4
