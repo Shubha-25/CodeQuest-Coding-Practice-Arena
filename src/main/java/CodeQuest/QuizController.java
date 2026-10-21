@@ -1,14 +1,23 @@
 package CodeQuest;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -177,9 +186,11 @@ public class QuizController {
 
             int questionId = id++;
 
-int level = questionId <= 11
-        ? 1
-        : ((questionId - 12) / 12) + 2;
+            // Keep the existing progression model while ensuring the published
+            // ten-level UI can reach every seeded question.
+            int level = questionId <= 11
+                    ? 1
+                    : Math.min(10, ((questionId - 12) / 12) + 2);
 
 questions.add(Map.of(
         "id", questionId,
@@ -213,4 +224,76 @@ public List<Map<String, Object>> getQuestionsByLevel(
     Collections.shuffle(quiz);
     return quiz;
 }
+
+    @PostMapping("/submit")
+    public QuizResult submitQuiz(@RequestBody QuizSubmissionRequest submission) {
+        if (submission == null || submission.level() == null) {
+            throw badRequest("A valid level is required.");
+        }
+        if (submission.level() < 1 || submission.level() > 10) {
+            throw badRequest("Level must be between 1 and 10.");
+        }
+        if (submission.answers() == null || submission.answers().isEmpty()) {
+            throw badRequest("At least one answer is required.");
+        }
+
+        Set<Integer> submittedQuestionIds = new HashSet<>();
+        int correctAnswers = 0;
+
+        for (QuizAnswerRequest answer : submission.answers()) {
+            if (answer == null || answer.questionId() == null || answer.selectedAnswer() == null) {
+                throw badRequest("Each answer must include a questionId and selectedAnswer.");
+            }
+            if (answer.selectedAnswer() < 0 || answer.selectedAnswer() > 3) {
+                throw badRequest("selectedAnswer must be between 0 and 3.");
+            }
+            if (!submittedQuestionIds.add(answer.questionId())) {
+                throw badRequest("A question cannot be submitted more than once.");
+            }
+
+            Map<String, Object> question = findQuestion(answer.questionId());
+            if (question == null || (int) question.get("level") != submission.level()) {
+                throw badRequest("Question " + answer.questionId() + " is not valid for this level.");
+            }
+            if (answer.selectedAnswer().equals(question.get("answer"))) {
+                correctAnswers++;
+            }
+        }
+
+        int totalQuestions = submission.answers().size();
+        double percentage = Math.round(correctAnswers * 10000.0 / totalQuestions) / 100.0;
+        return new QuizResult(
+                submission.level(),
+                totalQuestions,
+                correctAnswers,
+                totalQuestions - correctAnswers,
+                correctAnswers,
+                percentage
+        );
+    }
+
+    private Map<String, Object> findQuestion(int questionId) {
+        for (Map<String, Object> question : questions) {
+            if ((int) question.get("id") == questionId) {
+                return question;
+            }
+        }
+        return null;
+    }
+
+    private ResponseStatusException badRequest(String message) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleBadRequest(ResponseStatusException exception) {
+        return ResponseEntity.status(exception.getStatusCode())
+                .body(new ApiError(exception.getReason()));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleMalformedRequest() {
+        return ResponseEntity.badRequest()
+                .body(new ApiError("Request body is missing or invalid."));
+    }
 }
