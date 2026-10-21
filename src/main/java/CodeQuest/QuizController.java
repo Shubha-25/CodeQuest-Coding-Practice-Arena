@@ -1,14 +1,23 @@
 package CodeQuest;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -107,12 +116,17 @@ public class QuizController {
                 M|Which tool compiles Java source code?|java~javac~javadoc only~jar only|1|javac is the Java compiler.|javac Main.java
                 M|What is the purpose of the main method's String[] args?|Store command-line arguments~Store all class fields~Return an integer~Create the JVM|0|args contains command-line arguments.|public static void main(String[] args)
                 M|Which keyword starts a conditional multi-branch statement?|switch~loop~choose~caseonly|0|switch selects among matching cases.|switch (n) {}
-                M|What is the result of true || false?|true~false~Error~null|0|Logical OR is true when at least one operand is true.|true || false
+                M|What is the result of true OR false?|true~false~Error~null|0|Logical OR is true when at least one operand is true.|true || false
                 M|What is the result of !true?|true~false~1~Error|1|Logical NOT reverses a boolean value.|!true
                 M|Which operator increments a variable by one?|--~++~**~//|1|++ increments a numeric variable.|x++;
                 M|What is the result of 2 + 3 * 4?|20~14~24~Error|1|Multiplication takes precedence over addition.|2 + 3 * 4
                 M|Which array property gives its size?|size()~length~length()~count()|1|Arrays use the length field.|arr.length
-                H|What is the output of System.out.println(5 + "2")?|7~52~Error~25|1|When one operand is a String, + concatenates.|System.out.println(5 + "2");
+               M|What is the output of 10 > 5?|true~false~10~Error|0|The greater-than operator checks whether the left value is larger.|System.out.println(10 > 5);
+                M|Which method returns the number of elements in an ArrayList?|length()~size()~count()~length|1|The size() method returns the number of elements in a collection.|list.size()
+                M|Which keyword is used to define a constant variable?|static~final~const~fixed|1|The final keyword prevents reassignment of a variable.|final int LIMIT = 100;
+                M|Which loop checks its condition before each iteration?|do-while~while~Both always check afterward~Neither|1|A while loop checks its condition before executing the body.|while (count < 5) { count++; }
+ 
+            H|What is the output of System.out.println(5 + "2")?|7~52~Error~25|1|When one operand is a String, + concatenates.|System.out.println(5 + "2");
                 H|What does Integer.parseInt("12x") do?|Returns 12~Returns zero~Throws NumberFormatException~Returns null|2|The text is not a valid integer representation.|Integer.parseInt("12x")
                 H|Which statement about String objects is true?|Strings are mutable~Strings are immutable~Strings are primitive types~Strings cannot be compared|1|String operations create new strings rather than modifying the original.|String s = "Java";
                 H|What is the result of "hello".toUpperCase()?|hello~HELLO~Hello~Error|1|toUpperCase returns an uppercase String.|"hello".toUpperCase()
@@ -143,7 +157,8 @@ public class QuizController {
                 H|Which class provides arbitrary-precision integer arithmetic?|Long~BigInteger~IntegerArray~Decimal|1|BigInteger supports integers beyond primitive ranges.|BigInteger.valueOf(100L)
                 H|Which principle says a subclass should be usable wherever its superclass is expected?|Single responsibility~Liskov substitution~Open addressing~Encapsulation only|1|The Liskov substitution principle concerns safe substitutability of subtypes.|Animal a = new Dog();
                 H|What is a Java record mainly intended for?|Concise data-carrier classes~Starting threads~Managing packages~Replacing the JVM|0|Records provide a concise way to declare data-oriented classes.|record Point(int x, int y) {}
-                """;
+               
+            """;
 
         int id = 1;
 
@@ -169,11 +184,11 @@ public class QuizController {
                 throw new IllegalStateException("Invalid options or answer index: " + line);
             }
 
-           int questionId = id++;
+            int questionId = id++;
 
-int level = questionId <= 11
-        ? 1
-        : ((questionId - 12) / 12) + 2;
+            int level = questionId <= 11
+                    ? 1
+                    : Math.min(10, ((questionId - 12) / 12) + 2);
 
 questions.add(Map.of(
         "id", questionId,
@@ -185,38 +200,115 @@ questions.add(Map.of(
         "difficulty", difficulty,
         "code", code
 ));
-              }
-
-        if (questions.size() != 119) {
-            throw new IllegalStateException(
-                    "Expected 119 questions, found " + questions.size()
-            );
         }
     }
 
-   @GetMapping("/questions")
-public List<Map<String, Object>> getQuestions() {
-    List<Map<String, Object>> quiz = new ArrayList<>(questions);
-    Collections.shuffle(quiz);
-    return quiz;
-}
     @GetMapping("/level/{level}")
-public List<Map<String, Object>> getQuestionsByLevel(
-        @PathVariable int level) {
+   
+    @GetMapping("/level/{level}")
+    public List<Map<String, Object>> getQuestionsByLevel(
+            @PathVariable int level) {
 
-    if (level < 1 || level > 10) {
-        return List.of();
-    }
-
-    List<Map<String, Object>> quiz = new ArrayList<>();
-
-    for (Map<String, Object> question : questions) {
-        if ((int) question.get("level") == level) {
-            quiz.add(question);
+        if (level < 1 || level > 10) {
+            return List.of();
         }
+
+        List<Map<String, Object>> quiz = new ArrayList<>();
+
+        for (Map<String, Object> question : questions) {
+            if ((int) question.get("level") == level) {
+                quiz.add(question);
+            }
+        }
+
+        Collections.shuffle(quiz);
+        return quiz;
     }
 
-    Collections.shuffle(quiz);
-    return quiz;
+    @PostMapping("/submit")
+    public QuizResult submitQuiz(@RequestBody QuizSubmissionRequest submission) {
+        if (submission == null || submission.level() == null) {
+            throw badRequest("A valid level is required.");
+        }
+        if (submission.level() < 1 || submission.level() > 10) {
+            throw badRequest("Level must be between 1 and 10.");
+        }
+        if (submission.answers() == null || submission.answers().isEmpty()) {
+            throw badRequest("At least one answer is required.");
+        }
+
+        Set<Integer> submittedQuestionIds = new HashSet<>();
+        int correctAnswers = 0;
+
+        for (QuizAnswerRequest answer : submission.answers()) {
+            if (answer == null || answer.questionId() == null
+                    || answer.selectedAnswer() == null) {
+                throw badRequest(
+                        "Each answer must include a questionId and selectedAnswer.");
+            }
+            if (answer.selectedAnswer() < 0 || answer.selectedAnswer() > 3) {
+                throw badRequest("selectedAnswer must be between 0 and 3.");
+            }
+            if (!submittedQuestionIds.add(answer.questionId())) {
+                throw badRequest("A question cannot be submitted more than once.");
+            }
+
+            Map<String, Object> question = findQuestion(answer.questionId());
+            if (question == null
+                    || (int) question.get("level") != submission.level()) {
+                throw badRequest("Question " + answer.questionId()
+                        + " is not valid for this level.");
+            }
+            if (answer.selectedAnswer().equals(question.get("answer"))) {
+                correctAnswers++;
+            }
+        }
+
+        int totalQuestions = submission.answers().size();
+        double percentage =
+                Math.round(correctAnswers * 10000.0 / totalQuestions) / 100.0;
+
+        return new QuizResult(
+                submission.level(),
+                totalQuestions,
+                correctAnswers,
+                totalQuestions - correctAnswers,
+                correctAnswers,
+                percentage
+        );
+    }
+
+    private Map<String, Object> findQuestion(int questionId) {
+        for (Map<String, Object> question : questions) {
+            if ((int) question.get("id") == questionId) {
+                return question;
+            }
+        }
+        return null;
+    }
+
+    private ResponseStatusException badRequest(String message) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleBadRequest(
+            ResponseStatusException exception) {
+        return ResponseEntity.status(exception.getStatusCode())
+                .body(new ApiError(exception.getReason()));
+    }
+
+    @GetMapping("/questions")
+    public List<Map<String, Object>> getQuestions() {
+        List<Map<String, Object>> quiz = new ArrayList<>(questions);
+        Collections.shuffle(quiz);
+        return quiz;
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleMalformedRequest() {
+        return ResponseEntity.badRequest()
+                .body(new ApiError("Request body is missing or invalid."));
+    }
 }
-}
+
