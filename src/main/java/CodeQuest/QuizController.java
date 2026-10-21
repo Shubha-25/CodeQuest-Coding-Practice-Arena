@@ -112,7 +112,12 @@ public class QuizController {
                 M|Which operator increments a variable by one?|--~++~**~//|1|++ increments a numeric variable.|x++;
                 M|What is the result of 2 + 3 * 4?|20~14~24~Error|1|Multiplication takes precedence over addition.|2 + 3 * 4
                 M|Which array property gives its size?|size()~length~length()~count()|1|Arrays use the length field.|arr.length
-                H|What is the output of System.out.println(5 + "2")?|7~52~Error~25|1|When one operand is a String, + concatenates.|System.out.println(5 + "2");
+               M|What is the output of 10 > 5?|true~false~10~Error|0|The greater-than operator checks whether the left value is larger.|System.out.println(10 > 5);
+                M|Which method returns the number of elements in an ArrayList?|length()~size()~count()~length|1|The size() method returns the number of elements in a collection.|list.size()
+                M|Which keyword is used to define a constant variable?|static~final~const~fixed|1|The final keyword prevents reassignment of a variable.|final int LIMIT = 100;
+                M|Which loop checks its condition before each iteration?|do-while~while~Both always check afterward~Neither|1|A while loop checks its condition before executing the body.|while (count < 5) { count++; }
+ 
+            H|What is the output of System.out.println(5 + "2")?|7~52~Error~25|1|When one operand is a String, + concatenates.|System.out.println(5 + "2");
                 H|What does Integer.parseInt("12x") do?|Returns 12~Returns zero~Throws NumberFormatException~Returns null|2|The text is not a valid integer representation.|Integer.parseInt("12x")
                 H|Which statement about String objects is true?|Strings are mutable~Strings are immutable~Strings are primitive types~Strings cannot be compared|1|String operations create new strings rather than modifying the original.|String s = "Java";
                 H|What is the result of "hello".toUpperCase()?|hello~HELLO~Hello~Error|1|toUpperCase returns an uppercase String.|"hello".toUpperCase()
@@ -144,11 +149,6 @@ public class QuizController {
                 H|Which principle says a subclass should be usable wherever its superclass is expected?|Single responsibility~Liskov substitution~Open addressing~Encapsulation only|1|The Liskov substitution principle concerns safe substitutability of subtypes.|Animal a = new Dog();
                 H|What is a Java record mainly intended for?|Concise data-carrier classes~Starting threads~Managing packages~Replacing the JVM|0|Records provide a concise way to declare data-oriented classes.|record Point(int x, int y) {}
                
-                M|What is the output of 10 > 5?|true~false~10~Error|0|The greater-than operator checks whether the left value is larger.|System.out.println(10 > 5);
-                M|Which method returns the number of elements in an ArrayList?|length()~size()~count()~length|1|The size() method returns the number of elements in a collection.|list.size()
-                M|Which keyword is used to define a constant variable?|static~final~const~fixed|1|The final keyword prevents reassignment of a variable.|final int LIMIT = 100;
-                M|Which loop checks its condition before each iteration?|do-while~while~Both always check afterward~Neither|1|A while loop checks its condition before executing the body.|while (count < 5) { count++; }
- 
             """;
 
         int id = 1;
