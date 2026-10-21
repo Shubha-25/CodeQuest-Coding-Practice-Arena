@@ -33,7 +33,7 @@ public class QuizController {
                 E|Which type stores whole numbers?|int~boolean~char~String|0|int stores integer values.|int count = 10;
                 E|Which type stores a single character?|String~char~boolean~int|1|char stores one character.|char grade = 'A';
                 E|Which operator checks equality for primitives?|=~==~!=~:=|1|== compares primitive values.|System.out.println(4 == 4);
-                E|Which operator means logical AND?|&&~||~!~&=|0|&& is logical AND.|true && false
+                E|Which operator means logical AND?|&&~OR~!~&=|0|&& is logical AND.|true && false
                 E|Which keyword returns a value from a method?|break~return~continue~void|1|return sends a value back to the caller.|return total;
                 E|Which loop executes while a condition is true?|if~while~switch~class|1|while repeats as long as its condition is true.|while (x < 5) {}
                 E|Which statement selects between alternatives?|package~if~import~new|1|if runs code when its condition is true.|if (age >= 18) {}
